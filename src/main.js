@@ -375,7 +375,16 @@ async function startSynthIDCheck(file) {
       body: JSON.stringify({ imageBase64: base64 }),
     });
 
-    const data = await res.json();
+    // /api/synthid is a Vercel serverless function — not available in local Vite dev.
+    // A 404 or non-JSON response means we're running locally without the API.
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      setSynthIDBadge('unconfigured', '仅部署后可用',
+        'SynthID API 路由仅在 Vercel 部署后生效，本地开发环境不支持。');
+      return;
+    }
 
     if (!data.configured) {
       setSynthIDBadge('unconfigured', '未配置',
