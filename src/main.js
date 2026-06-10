@@ -45,6 +45,9 @@ const resultRemote  = document.getElementById('resultRemote');
 const resultError   = document.getElementById('resultError');
 const errorMessage  = document.getElementById('errorMessage');
 const aiDetail      = document.getElementById('aiDetail');
+const synthidSection  = document.getElementById('synthidSection');
+const synthidBadge    = document.getElementById('synthidBadge');
+const synthidDesc     = document.getElementById('synthidDesc');
 const manifestSection = document.getElementById('manifestSection');
 const manifestDetails = document.getElementById('manifestDetails');
 const manifestContent = document.getElementById('manifestContent');
@@ -109,6 +112,10 @@ async function handleFile(file) {
   // server is unreachable. Race against a 5-second timeout to unblock the UI.
   const READ_TIMEOUT_MS = 5000;
 
+  // Run C2PA and SynthID checks in parallel — C2PA result shown first,
+  // SynthID badge updates when its API responds.
+  startSynthIDCheck(file);
+
   try {
     console.log('[C2PA] 开始处理文件:', file.name);
     const c2pa = await getC2pa();
@@ -124,7 +131,6 @@ async function handleFile(file) {
     showResult(manifestStore);
   } catch (err) {
     console.error('[C2PA] 错误:', err);
-    // Dispose the instance so stuck workers don't block the next upload.
     disposeC2pa();
     if (err.message === 'remote-manifest-timeout') {
       hideLoading();
@@ -352,8 +358,57 @@ function show(el) {
 }
 
 function hideAllResults() {
-  [resultAI, resultHuman, resultUnknown, resultRemote, resultError, manifestSection]
+  [resultAI, resultHuman, resultUnknown, resultRemote, resultError, manifestSection, synthidSection]
     .forEach(el => el.classList.add('hidden'));
+}
+
+// ─── SynthID ─────────────────────────────────────────────────────────────────
+async function startSynthIDCheck(file) {
+  show(synthidSection);
+  setSynthIDBadge('loading', '检测中…', '正在向 Google SynthID 服务发送请求…');
+
+  try {
+    const base64 = await fileToBase64(file);
+    const res = await fetch('/api/synthid', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64: base64 }),
+    });
+
+    const data = await res.json();
+
+    if (!data.configured) {
+      setSynthIDBadge('unconfigured', '未配置',
+        '需在 Vercel 环境变量中设置 GOOGLE_CLOUD_PROJECT_ID 和 GOOGLE_SERVICE_ACCOUNT_JSON');
+      return;
+    }
+
+    if (data.detected) {
+      setSynthIDBadge('detected', '🤖 检测到 SynthID 水印',
+        `Google DeepMind SynthID 隐形水印已确认。此图片由 Google AI 工具生成。${data.score != null ? `（置信度：${(data.score * 100).toFixed(1)}%）` : ''}`);
+    } else {
+      setSynthIDBadge('clear', '未检测到 SynthID 水印',
+        '未发现 Google SynthID 隐形水印。此图片可能不是由 Google AI 工具生成，或水印已被移除。');
+    }
+  } catch (err) {
+    console.warn('[SynthID]', err.message);
+    setSynthIDBadge('error', '检测失败', err.message);
+  }
+}
+
+function setSynthIDBadge(state, label, desc) {
+  synthidBadge.className = `synthid-badge ${state}`;
+  synthidBadge.textContent = label;
+  synthidDesc.textContent = desc;
+}
+
+async function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 function showError(err) {

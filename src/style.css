@@ -342,6 +342,64 @@ body {
   100% { content: ''; }
 }
 
+/* ─── SynthID Section ───────────────────────────────────────────────────────── */
+.synthid-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  animation: fadeSlideIn 0.4s ease;
+}
+
+.synthid-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.synthid-logo {
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, #4285f4, #34a853, #fbbc05, #ea4335);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  flex-shrink: 0;
+}
+
+.synthid-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.synthid-badge {
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.synthid-badge.loading     { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); animation: pulse 1.4s ease-in-out infinite; }
+.synthid-badge.detected    { background: var(--ai-bg); color: var(--ai-color); border: 1px solid var(--ai-border); }
+.synthid-badge.clear       { background: var(--human-bg); color: var(--human-color); border: 1px solid var(--human-border); }
+.synthid-badge.unconfigured{ background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+.synthid-badge.error       { background: rgba(248,113,113,0.1); color: var(--error-color); border: 1px solid rgba(248,113,113,0.3); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.synthid-desc {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
 /* ─── Manifest Section ──────────────────────────────────────────────────────── */
 .manifest-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 
