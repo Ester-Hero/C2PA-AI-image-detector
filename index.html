@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI图片鉴定 · C2PA 内容真实性验证</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="site-title">AI 图片鉴定</h1>
+          <p class="site-subtitle">基于 C2PA 内容真实性标准</p>
+        </div>
+        <a
+          href="https://contentauthenticity.org/"
+          target="_blank"
+          rel="noopener"
+          class="cai-badge"
+          title="Content Authenticity Initiative"
+        >
+          <span>CAI</span> 认证标准
+        </a>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- Upload Zone -->
+      <section class="upload-section" id="uploadSection">
+        <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="上传图片进行验证">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <p class="upload-title">拖放图片到此处</p>
+          <p class="upload-subtitle">或点击选择文件</p>
+          <p class="upload-formats">支持 JPEG · PNG · WebP · HEIC</p>
+          <input type="file" id="fileInput" accept="image/*" hidden />
+        </div>
+
+        <!-- Info Cards -->
+        <div class="info-cards">
+          <div class="info-card">
+            <div class="info-card-icon">🔐</div>
+            <div>
+              <strong>数字签名验证</strong>
+              <p>读取图片内嵌的 C2PA 数字凭证，验证签名链完整性</p>
+            </div>
+          </div>
+          <div class="info-card">
+            <div class="info-card-icon">🌐</div>
+            <div>
+              <strong>纯前端处理</strong>
+              <p>所有分析在浏览器本地完成，图片不会上传到任何服务器</p>
+            </div>
+          </div>
+          <div class="info-card">
+            <div class="info-card-icon">🏭</div>
+            <div>
+              <strong>行业标准</strong>
+              <p>Google、Adobe、OpenAI 等巨头联合推行的 C2PA 开放标准</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analysis Panel -->
+      <section class="analysis-section hidden" id="analysisSection">
+        <!-- Image Preview -->
+        <div class="preview-card">
+          <img id="previewImage" alt="上传的图片" />
+          <div class="preview-meta" id="previewMeta"></div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="result-card loading-card hidden">
+          <div class="spinner"></div>
+          <p class="loading-text">正在解析 C2PA 数据<span class="dots"></span></p>
+        </div>
+
+        <!-- Result: AI Generated -->
+        <div id="resultAI" class="result-card verdict-ai hidden">
+          <div class="verdict-icon">🤖</div>
+          <div class="verdict-label ai">AI 生成图片</div>
+          <p class="verdict-desc">此图片包含 AI 生成的 C2PA 数字凭证</p>
+          <div class="verdict-detail" id="aiDetail"></div>
+        </div>
+
+        <!-- Result: Human Created -->
+        <div id="resultHuman" class="result-card verdict-human hidden">
+          <div class="verdict-icon">✅</div>
+          <div class="verdict-label human">真实人类创作</div>
+          <p class="verdict-desc">此图片含有 C2PA 凭证，未发现 AI 生成标记</p>
+        </div>
+
+        <!-- Result: No C2PA -->
+        <div id="resultUnknown" class="result-card verdict-unknown hidden">
+          <div class="verdict-icon">❓</div>
+          <div class="verdict-label unknown">无法通过 C2PA 验证</div>
+          <p class="verdict-desc">此图片不含 C2PA 数字凭证，无法判断是否由 AI 生成</p>
+          <div class="warning-box">
+            <strong>注意：</strong>没有 C2PA 凭证并不代表图片一定由人类拍摄。许多 AI 工具目前尚未强制嵌入 C2PA 签名。C2PA 验证只能确认"有签名且签名显示为 AI 生成"的情况。
+          </div>
+        </div>
+
+        <!-- Result: Remote Manifest -->
+        <div id="resultRemote" class="result-card verdict-unknown hidden">
+          <div class="verdict-icon">🌐</div>
+          <div class="verdict-label unknown">凭证存储在远端服务器</div>
+          <p class="verdict-desc">此图片含有 C2PA 数据，但完整凭证存储在外部服务器，当前无法访问</p>
+          <div class="warning-box">
+            <strong>说明：</strong>部分设备或软件会将 C2PA 凭证上传到云端服务器（如 Leica、Sony 相机或某些 AI 工具），本工具需要能访问该服务器才能完成验证。<br>
+            您可以访问 <a href="https://verify.contentauthenticity.org/" target="_blank" rel="noopener" style="color:var(--accent)">Content Authenticity Verify</a> 进行在线验证。
+          </div>
+        </div>
+
+        <!-- Result: Error -->
+        <div id="resultError" class="result-card verdict-error hidden">
+          <div class="verdict-icon">⚠️</div>
+          <div class="verdict-label error">读取失败</div>
+          <p class="verdict-desc" id="errorMessage"></p>
+        </div>
+
+        <!-- C2PA Manifest Details -->
+        <div id="manifestSection" class="manifest-section hidden">
+          <button class="collapse-btn" id="collapseBtn" aria-expanded="false">
+            <span>查看完整 C2PA 凭证详情</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <div id="manifestContent" class="manifest-content collapsed">
+            <div id="manifestDetails"></div>
+          </div>
+        </div>
+
+        <!-- Try Another -->
+        <button class="btn-secondary" id="tryAgainBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-3.96"/>
+          </svg>
+          重新检测另一张图片
+        </button>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        由 <a href="https://github.com/contentauth/c2pa-js" target="_blank" rel="noopener">c2pa-js</a>
+        提供技术支持 ·
+        <a href="https://contentauthenticity.org/" target="_blank" rel="noopener">内容真实性联盟 (CAI)</a>
+        标准
+      </p>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
